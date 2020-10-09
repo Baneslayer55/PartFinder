@@ -1,6 +1,7 @@
 package com.partfinder.parser.dromru;
 
 import com.partfinder.model.PartModel;
+import com.partfinder.model.SearchResult;
 import com.partfinder.model.drom.DromPartModel;
 import com.partfinder.parser.Parser;
 import org.jsoup.Jsoup;
@@ -16,10 +17,11 @@ public class ParseDrom implements Parser {
 
 
     @Override
-    public List<PartModel> findByVendorCode(String vendorCode) throws IOException {
+    public SearchResult findByVendorCode(String vendorCode) throws IOException {
+
+        SearchResult searchResult = new SearchResult();
 
         List<PartModel> findedParts = new ArrayList<>();
-
         String searchUrl = "https://baza.drom.ru/oem/" + vendorCode;
 
         Document doc = Jsoup.connect(searchUrl).get();
@@ -27,27 +29,37 @@ public class ParseDrom implements Parser {
         Element pageCount = doc.selectFirst("span.pagebarInner");
 
         Elements goods = doc.select("div.bull-item-content__content-wrapper");
+        System.out.println(goods.size() + " Количество публикаций");
 
         for (Element e: goods) {
             try {
-                String _vendorCode = vendorCode;
-                double price =  0;
-                String brand = e.select().text();
-                String url = "https://baza.drom.ru/" + e.select().text();
-                String city = e.select().text();
+//              Double price = parseDromPrice(e.selectFirst("span.price-per-quantity__price").text() != null ?
+//                        e.selectFirst("span.price-per-quantity__price").text() : e.selectFirst("span[class^=price-block__price]").text());
+                findedParts.add(
+                    new DromPartModel(
+                    vendorCode,
+                    parseDromPrice( e.selectFirst("span.price-per-quantity__price") != null ?
+                                    e.selectFirst("span.price-per-quantity__price").text():
+                                    e.selectFirst("span[class^=price-block__price]").text()),
+                    e.selectFirst("div[class^=bull-item__annotation-row]").text(), // Brand
+                    "https://baza.drom.ru/" + goods.select("a").first().attr("href"), // URL
+                    e.selectFirst("span.bull-delivery__city").text()) ); // City
+
+            } catch (Exception exception) {
+                //System.out.println(e.selectFirst("span[class^=price-block__price]").text());
+                System.out.println("cant create");
+                System.out.println(exception.toString());
             }
+
         }
 
+        searchResult.setSearchResult(findedParts);
+        searchResult.setSearchUrl(searchUrl);
 
-        return findedParts;
+        return searchResult;
     }
 
     private double parseDromPrice(String price) throws Exception {
-        try{
-            return  Double.valueOf(price.substring(0, price.length()-1).replace(" ", ""));
-        }
-        catch (Exception e){
-            throw new Exception("Cant parse price");
-        }
+        return  Double.valueOf(price.replaceAll("[^0-9]",""));
     }
 }
