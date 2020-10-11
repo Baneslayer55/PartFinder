@@ -15,6 +15,7 @@ import java.util.List;
 
 public class ParseDrom implements Parser {
 
+    private boolean hasNextPage = false;
 
     @Override
     public SearchResult findByVendorCode(String vendorCode) throws IOException {
@@ -22,39 +23,48 @@ public class ParseDrom implements Parser {
         SearchResult searchResult = new SearchResult();
 
         List<PartModel> findedParts = new ArrayList<>();
+
         String searchUrl = "https://baza.drom.ru/oem/" + vendorCode;
 
-        Document doc = Jsoup.connect(searchUrl).get();
+        searchResult.setSearchUrl(searchUrl);
 
-        Element pageCount = doc.selectFirst("span.pagebarInner");
+        do {
+            Document doc = Jsoup.connect(searchUrl).get();
 
-        Elements goods = doc.select("div.bull-item-content__content-wrapper");
-        System.out.println(goods.size() + " Количество публикаций");
+            Element nextPageLink = doc.selectFirst("link[rel^=next]");
 
-        for (Element e: goods) {
-            try {
-//              Double price = parseDromPrice(e.selectFirst("span.price-per-quantity__price").text() != null ?
-//                        e.selectFirst("span.price-per-quantity__price").text() : e.selectFirst("span[class^=price-block__price]").text());
-                findedParts.add(
-                    new DromPartModel(
-                    vendorCode,
-                    parseDromPrice( e.selectFirst("span.price-per-quantity__price") != null ?
-                                    e.selectFirst("span.price-per-quantity__price").text():
-                                    e.selectFirst("span[class^=price-block__price]").text()),
-                    e.selectFirst("div[class^=bull-item__annotation-row]").text(), // Brand
-                    "https://baza.drom.ru/" + goods.select("a").first().attr("href"), // URL
-                    e.selectFirst("span.bull-delivery__city").text()) ); // City
-
-            } catch (Exception exception) {
-                //System.out.println(e.selectFirst("span[class^=price-block__price]").text());
-                System.out.println("cant create");
-                System.out.println(exception.toString());
+            if (nextPageLink != null) {
+                hasNextPage = true;
+                searchUrl = "https://baza.drom.ru" + nextPageLink.attr("href");
+            }else {
+                hasNextPage = false;
             }
 
+            Element pageCount = doc.selectFirst("span.pagebarInner");
+
+            Elements goods = doc.select("div.bull-item-content__content-wrapper");
+
+            for (Element e: goods) {
+                try {
+                    findedParts.add(
+                        new DromPartModel(
+                            vendorCode,
+                            parseDromPrice(
+                                e.selectFirst("span.price-per-quantity__price") != null ?
+                                e.selectFirst("span.price-per-quantity__price").text():
+                                e.selectFirst("span[class^=price-block__price]").text()
+                            ), //Два варианта цены
+                            e.selectFirst("div[class^=bull-item__annotation-row]").text(), // Brand
+                            "https://baza.drom.ru/" + goods.select("a").first().attr("href"), // URL
+                            e.selectFirst("span.bull-delivery__city").text()) // City
+                            );
+                } catch (Exception exception) {
+                }
+            }
         }
+        while (hasNextPage);
 
         searchResult.setSearchResult(findedParts);
-        searchResult.setSearchUrl(searchUrl);
 
         return searchResult;
     }
