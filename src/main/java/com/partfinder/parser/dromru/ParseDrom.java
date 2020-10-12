@@ -20,6 +20,8 @@ public class ParseDrom implements Parser {
     @Override
     public SearchResult findByVendorCode(String vendorCode) throws IOException {
 
+        long time = System.currentTimeMillis();
+
         SearchResult searchResult = new SearchResult();
 
         List<PartModel> findedParts = new ArrayList<>();
@@ -27,6 +29,8 @@ public class ParseDrom implements Parser {
         String searchUrl = "https://baza.drom.ru/oem/" + vendorCode;
 
         searchResult.setSearchUrl(searchUrl);
+
+        System.out.println(System.currentTimeMillis() - time + "before loop");
 
         do {
             Document doc = Jsoup.connect(searchUrl).get();
@@ -43,7 +47,7 @@ public class ParseDrom implements Parser {
             Element pageCount = doc.selectFirst("span.pagebarInner");
 
             Elements goods = doc.select("div.bull-item-content__content-wrapper");
-
+            System.out.println(System.currentTimeMillis() - time + "before creating partModel");
             for (Element e: goods) {
                 try {
                     findedParts.add(
@@ -61,11 +65,12 @@ public class ParseDrom implements Parser {
                 } catch (Exception exception) {
                 }
             }
+            System.out.println(System.currentTimeMillis() - time + "after each loop");
         }
         while (hasNextPage);
 
         searchResult.setSearchResult(findedParts);
-
+        System.out.println(System.currentTimeMillis() - time + "end of program");
         return searchResult;
     }
 
