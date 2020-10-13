@@ -12,67 +12,85 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.*;
 
 public class ParseDrom implements Parser {
 
     private boolean hasNextPage = false;
 
     @Override
-    public SearchResult findByVendorCode(String vendorCode) throws IOException {
-
-        long time = System.currentTimeMillis();
+    public SearchResult findByVendorCode(String vendorCode) throws IOException, ExecutionException, InterruptedException {
 
         SearchResult searchResult = new SearchResult();
-
-        List<PartModel> findedParts = new ArrayList<>();
 
         String searchUrl = "https://baza.drom.ru/oem/" + vendorCode;
 
         searchResult.setSearchUrl(searchUrl);
 
-        System.out.println(System.currentTimeMillis() - time + "before loop");
+        searchResult.setSearchResult(parseAllPages("34116767191", 137));
 
-        do {
-            Document doc = Jsoup.connect(searchUrl).get();
-
-            Element nextPageLink = doc.selectFirst("link[rel^=next]");
-
-            if (nextPageLink != null) {
-                hasNextPage = true;
-                searchUrl = "https://baza.drom.ru" + nextPageLink.attr("href");
-            }else {
-                hasNextPage = false;
-            }
-
-            Element pageCount = doc.selectFirst("span.pagebarInner");
-
-            Elements goods = doc.select("div.bull-item-content__content-wrapper");
-            System.out.println(System.currentTimeMillis() - time + "before creating partModel");
-            for (Element e: goods) {
-                try {
-                    findedParts.add(
-                        new DromPartModel(
-                            vendorCode,
-                            parseDromPrice(
-                                e.selectFirst("span.price-per-quantity__price") != null ?
-                                e.selectFirst("span.price-per-quantity__price").text():
-                                e.selectFirst("span[class^=price-block__price]").text()
-                            ), //Два варианта цены
-                            e.selectFirst("div[class^=bull-item__annotation-row]").text(), // Brand
-                            "https://baza.drom.ru/" + goods.select("a").first().attr("href"), // URL
-                            e.selectFirst("span.bull-delivery__city").text()) // City
-                            );
-                } catch (Exception exception) {
-                }
-            }
-            System.out.println(System.currentTimeMillis() - time + "after each loop");
-        }
-        while (hasNextPage);
-
-        searchResult.setSearchResult(findedParts);
-        System.out.println(System.currentTimeMillis() - time + "end of program");
         return searchResult;
     }
+
+    private List<PartModel> parseAllPages(String vendorCode, int pageCount) throws InterruptedException, ExecutionException {
+
+        ExecutorService executor = Executors.newCachedThreadPool();
+
+        List<Integer> pageArray= new ArrayList<>();
+
+        for (int i = 1; i < pageCount + 1; i++) pageArray.add(i);
+
+        List<Callable<List<PartModel>>> tasks = new ArrayList<>();
+
+        for (int i : pageArray) tasks.add(
+                () ->{
+                    return parseDromPage(vendorCode, i);
+                }
+        );
+
+        List<PartModel> findedParts = new ArrayList<>();
+
+        List<Future<List<PartModel>>> results = executor.invokeAll(tasks);
+
+        for (Future<List<PartModel>>  result: results) {
+            findedParts.addAll(result.get());
+        }
+
+        return findedParts;
+    }
+
+    private List<PartModel> parseDromPage(String vendorCode, int pageNum) throws IOException {
+
+        List<PartModel> partOnSinglePage = new ArrayList<>();
+
+        String searchUrl = "https://baza.drom.ru/oem/" + vendorCode + "/?page=" + pageNum;
+
+        Document doc = Jsoup.connect(searchUrl).get();
+
+        Elements goods = doc.select("div.bull-item-content__content-wrapper");
+
+        for (Element e: goods) {
+            try {
+                partOnSinglePage.add(
+                        new DromPartModel(
+                                vendorCode,
+                                parseDromPrice(
+                                        e.selectFirst("span.price-per-quantity__price") != null ?
+                                                e.selectFirst("span.price-per-quantity__price").text():
+                                                e.selectFirst("span[class^=price-block__price]").text()
+                                ), //Два варианта цены
+                                e.selectFirst("div[class^=bull-item__annotation-row]").text(), // Brand
+                                "https://baza.drom.ru/" + goods.select("a").first().attr("href"), // URL
+                                e.selectFirst("span.bull-delivery__city").text()) // City
+                );
+            } catch (Exception exception) {
+                exception.printStackTrace();
+            }
+        }
+        return  partOnSinglePage;
+    }
+
+
 
     private double parseDromPrice(String price) throws Exception {
         return  Double.valueOf(price.replaceAll("[^0-9]",""));
