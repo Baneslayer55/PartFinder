@@ -3,7 +3,7 @@ package com.partfinder.parser.dromru;
 import com.partfinder.model.PartModel;
 import com.partfinder.model.SearchResult;
 import com.partfinder.model.drom.DromPartModel;
-import com.partfinder.parser.Parser;
+import com.partfinder.parser.Parseable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
 
-public class ParseDrom implements Parser {
+public class ParseDrom implements Parseable {
 
     private boolean hasNextPage = false;
 
@@ -27,7 +27,11 @@ public class ParseDrom implements Parser {
 
         searchResult.setSearchUrl(searchUrl);
 
-        searchResult.setSearchResult(parseAllPages("34116767191", 137));
+        Document doc = Jsoup.connect("https://baza.drom.ru/oem/"+ vendorCode).get();  //itemsCount_placeholder
+
+        int partsFinded = Integer.valueOf(doc.selectFirst("span[id^=itemsCount_placeholder]").attr("data-count"));
+
+        searchResult.setSearchResult(parseAllPages(vendorCode, (int) Math.ceil(partsFinded/50.0)));
 
         return searchResult;
     }
@@ -36,17 +40,13 @@ public class ParseDrom implements Parser {
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
-        List<Integer> pageArray= new ArrayList<>();
+        List<Integer> pageArray = new ArrayList<>();
 
         for (int i = 1; i < pageCount + 1; i++) pageArray.add(i);
 
         List<Callable<List<PartModel>>> tasks = new ArrayList<>();
 
-        for (int i : pageArray) tasks.add(
-                () ->{
-                    return parseDromPage(vendorCode, i);
-                }
-        );
+        for (int i : pageArray) tasks.add( () -> parseDromPage(vendorCode, i) );
 
         List<PartModel> findedParts = new ArrayList<>();
 
@@ -55,7 +55,6 @@ public class ParseDrom implements Parser {
         for (Future<List<PartModel>>  result: results) {
             findedParts.addAll(result.get());
         }
-
         return findedParts;
     }
 
@@ -80,7 +79,7 @@ public class ParseDrom implements Parser {
                                                 e.selectFirst("span[class^=price-block__price]").text()
                                 ), //Два варианта цены
                                 e.selectFirst("div[class^=bull-item__annotation-row]").text(), // Brand
-                                "https://baza.drom.ru/" + goods.select("a").first().attr("href"), // URL
+                                "https://baza.drom.ru" + e.select("a").first().attr("href"), // URL
                                 e.selectFirst("span.bull-delivery__city").text()) // City
                 );
             } catch (Exception exception) {
@@ -90,9 +89,7 @@ public class ParseDrom implements Parser {
         return  partOnSinglePage;
     }
 
-
-
-    private double parseDromPrice(String price) throws Exception {
+    private double parseDromPrice(String price) {
         return  Double.valueOf(price.replaceAll("[^0-9]",""));
     }
 }

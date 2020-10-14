@@ -1,13 +1,11 @@
-package com.partfinder.model.drom;
+package com.partfinder.model.avito;
 
 import com.partfinder.model.PartModel;
-import lombok.*;
+import lombok.NonNull;
 
+public class AvitoPartModel extends PartModel {
 
-@AllArgsConstructor
-public class DromPartModel extends PartModel {
-
-    public DromPartModel(@NonNull String vendorCode,
+    public AvitoPartModel(@NonNull String vendorCode,
                          @NonNull Double price,
                          String brand,
                          @NonNull String url,
@@ -18,5 +16,4 @@ public class DromPartModel extends PartModel {
         this.url = url;
         this.city = city;
     }
-
 }

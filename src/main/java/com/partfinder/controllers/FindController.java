@@ -1,28 +1,32 @@
 package com.partfinder.controllers;
 
+import com.partfinder.model.TotalSearchResult;
 import com.partfinder.model.SearchResult;
-import com.partfinder.parser.Parser;
+import com.partfinder.parser.avitoru.ParseAvito;
 import com.partfinder.parser.dromru.ParseDrom;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 @RestController
 public class FindController {
 
     @GetMapping("/find")
-    public SearchResult FindByVendorCode(@RequestParam(value = "code")String vendorCode) {
+    public TotalSearchResult FindByVendorCode(@RequestParam(value = "code")String vendorCode) throws InterruptedException, ExecutionException, IOException {
 
-        Parser dromParser = new ParseDrom();
+        TotalSearchResult totalSearchResult = new TotalSearchResult();
 
-        SearchResult searchResult = new SearchResult();
+        totalSearchResult.addSearchResult(
+            new ParseDrom().findByVendorCode(vendorCode),
+            new ParseAvito().findByVendorCode(vendorCode)
+        );
 
-        try {
-            searchResult = dromParser.findByVendorCode(vendorCode);
-        } catch (Exception e) {
-
-        }
-        return searchResult;
+        return totalSearchResult;
     }
 
     @GetMapping("/test")
