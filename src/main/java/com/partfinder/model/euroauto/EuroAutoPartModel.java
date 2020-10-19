@@ -1,13 +1,11 @@
-package com.partfinder.model.drom;
+package com.partfinder.model.euroauto;
 
 import com.partfinder.model.PartModel;
-import lombok.*;
+import lombok.NonNull;
 
+public class EuroAutoPartModel extends PartModel {
 
-@AllArgsConstructor
-public class DromPartModel extends PartModel {
-
-    public DromPartModel(@NonNull String vendorCode,
+    public EuroAutoPartModel(@NonNull String vendorCode,
                          @NonNull Double price,
                          String brand,
                          @NonNull String url,

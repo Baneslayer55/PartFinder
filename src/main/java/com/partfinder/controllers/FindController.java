@@ -16,17 +16,16 @@ import java.util.concurrent.ExecutionException;
 @RestController
 public class FindController {
 
-    @GetMapping("/find")
-    public TotalSearchResult FindByVendorCode(@RequestParam(value = "code")String vendorCode) throws InterruptedException, ExecutionException, IOException {
+    @GetMapping("/checkdrom")
+    public SearchResult ParseDrom(@RequestParam(value = "code")String vendorCode) throws InterruptedException, ExecutionException, IOException {
 
-        TotalSearchResult totalSearchResult = new TotalSearchResult();
+        return new ParseDrom().findByVendorCode(vendorCode);
+    }
 
-        totalSearchResult.addSearchResult(
-            new ParseDrom().findByVendorCode(vendorCode),
-            new ParseAvito().findByVendorCode(vendorCode)
-        );
+    @GetMapping("/checkavito")
+    public SearchResult ParseAvito(@RequestParam(value = "code")String vendorCode) throws InterruptedException, ExecutionException, IOException {
 
-        return totalSearchResult;
+        return new ParseAvito().findByVendorCode(vendorCode);
     }
 
     @GetMapping("/test")

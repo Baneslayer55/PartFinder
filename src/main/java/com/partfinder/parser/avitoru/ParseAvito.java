@@ -3,7 +3,6 @@ package com.partfinder.parser.avitoru;
 import com.partfinder.model.PartModel;
 import com.partfinder.model.SearchResult;
 import com.partfinder.model.avito.AvitoPartModel;
-import com.partfinder.model.drom.DromPartModel;
 import com.partfinder.parser.Parseable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
