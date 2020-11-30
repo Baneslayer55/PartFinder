@@ -1,4 +1,4 @@
-package com.partfinder.model;
+package com.partfinder.test.model;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -12,5 +12,5 @@ public class SearchResult {
 
     private String searchUrl;
 
-    private List<PartModel> searchResult;
+    private List<PartAd> searchResult;
 }

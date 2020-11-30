@@ -1,9 +1,9 @@
-package com.partfinder.parser.avitoru;
+package com.partfinder.test.parser.avitoru;
 
-import com.partfinder.model.PartModel;
-import com.partfinder.model.SearchResult;
-import com.partfinder.model.avito.AvitoPartModel;
-import com.partfinder.parser.Parseable;
+import com.partfinder.test.model.PartAd;
+import com.partfinder.test.model.SearchResult;
+import com.partfinder.test.model.avito.AvitoPartAd;
+import com.partfinder.test.parser.Parseable;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -34,7 +34,7 @@ public class ParseAvito implements Parseable {
         return searchResult;
     }
 
-    private List<PartModel> parseAllPages(String vendorCode, int pageCount) throws ExecutionException, InterruptedException {
+    private List<PartAd> parseAllPages(String vendorCode, int pageCount) throws ExecutionException, InterruptedException {
 
         ExecutorService executor = Executors.newCachedThreadPool();
 
@@ -42,23 +42,23 @@ public class ParseAvito implements Parseable {
 
         for (int i = 1; i < pageCount + 1; i++) pageArray.add(i);
 
-        List<Callable<List<PartModel>>> tasks = new ArrayList<>();
+        List<Callable<List<PartAd>>> tasks = new ArrayList<>();
 
         for (int i : pageArray) tasks.add( () -> parseAvitoPage(vendorCode, i) );
 
-        List<PartModel> findedParts = new ArrayList<>();
+        List<PartAd> findedParts = new ArrayList<>();
 
-        List<Future<List<PartModel>>> results = executor.invokeAll(tasks);
+        List<Future<List<PartAd>>> results = executor.invokeAll(tasks);
 
-        for (Future<List<PartModel>>  result: results) {
+        for (Future<List<PartAd>>  result: results) {
             findedParts.addAll(result.get());
         }
         return findedParts;
     }
 
-    private List<PartModel> parseAvitoPage(String vendorCode, int pageNum) throws IOException {
+    private List<PartAd> parseAvitoPage(String vendorCode, int pageNum) throws IOException {
 
-        List<PartModel> partOnSinglePage = new ArrayList<>();
+        List<PartAd> partOnSinglePage = new ArrayList<>();
 
         String searchUrl = "https://www.avito.ru/rossiya/zapchasti_i_aksessuary/zapchasti/dlya_avtomobiley?p=" + pageNum + "&q=" + vendorCode;
 
@@ -69,7 +69,7 @@ public class ParseAvito implements Parseable {
         for (Element e: goods) {
             try {
                 partOnSinglePage.add(
-                    new AvitoPartModel(
+                    new AvitoPartAd(
                         vendorCode,
                         Double.valueOf(e.selectFirst("meta[content~=[0-9]+]").attr("content")), //Price
                         "", // Brand

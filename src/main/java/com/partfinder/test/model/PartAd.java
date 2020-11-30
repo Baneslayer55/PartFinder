@@ -1,4 +1,4 @@
-package com.partfinder.model;
+package com.partfinder.test.model;
 
 
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public abstract class PartModel {
+public abstract class PartAd {
 
     protected String vendorCode;
 

@@ -1,4 +1,4 @@
-package com.partfinder.model;
+package com.partfinder.test.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

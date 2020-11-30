@@ -1,6 +1,6 @@
-package com.partfinder.parser;
+package com.partfinder.test.parser;
 
-import com.partfinder.model.SearchResult;
+import com.partfinder.test.model.SearchResult;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;

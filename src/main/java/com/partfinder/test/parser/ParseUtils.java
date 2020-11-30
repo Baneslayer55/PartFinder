@@ -1,4 +1,4 @@
-package com.partfinder.parser;
+package com.partfinder.test.parser;
 
 public class ParseUtils {
 
